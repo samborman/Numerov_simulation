@@ -2,6 +2,8 @@
 """
 Created on Sat Sep 24 12:44:12 2022
 
+Simple Numerov algorithm to solve the time independent Schrodinger equation in a given potential.
+
 @author: Sam
 """
 #Imports
@@ -21,11 +23,10 @@ xmax = 5
 
 #Simulation settings
 init_guess = 1E-30
-threshold = 1E-10
+threshold = 1E-8
 
 Nmin=0
 Nmax=2
-
 #Initialize grid
 x = np.linspace(xmin, xmax, N) #include boundaries
 dx = (xmax-xmin)/(N-1) #N-1 because we include the boundary
@@ -36,11 +37,34 @@ psi = np.zeros(N)
 States = {}
 
 #%%Potential
-def potential(x, a):
+#Some fun potentials are defined to choose from. But others can be defined as well. 
+def harmonic_potential(x, a):
     return a*x**2
 
-a=0.5
-vpot = potential(x, a) #potential evaluated at all points in x
+def square_well_potential(x, a, depth=3, bias=0):
+    result = np.zeros(x.shape)
+    for i in range(len(x)):
+        if np.abs(x[i]) < a:
+            result[i] = -1*depth
+        elif np.abs(x[i]) < 2*a:
+            result[i] = -0.5*depth
+        else:
+            result[i] = bias
+    return result
+
+def double_square_well_potential(x, a, depth=3, bias=0):
+    result = np.zeros(x.shape)
+    for i in range(len(x)):
+        if x[i] > -3*a/2 and x[i] < -1*a/2:
+            result[i] = -1*depth
+        elif x[i] > 1*a/2 and x[i] < 3*a/2:
+            result[i] = -1*depth
+        else:
+            result[i] = bias
+    return result
+
+a=2
+vpot = double_square_well_potential(x, a) #potential evaluated at all points in x, change the function to evaluate here
 pot_depth = (np.max(vpot)- np.min(vpot))/2 #depth of the wells, only used for plotting the wavefunction at a visible scale
 
 #plot the discretized potential
@@ -60,23 +84,12 @@ def Normalization(WaveFunction, WaveFunctionGrid):
     return WaveFunction/np.sqrt(NormalizationConstant)
 
 class State(object):
-    """ A state has an Energy and a wavefunction """
+    """ Quick class to story energy and wavefunction for each of N states """
     
     def __init__(self, Energy, WaveFunction):
         self.Energy = Energy
         self.WaveFunction = WaveFunction
     
-    def getEnergy(self):
-        return self.Energy
-    
-    def getWaveFunction(self):
-        return self.WaveFunction
-    
-    def setTime_dependency(self, WaveFunction_t):
-        self.WaveFunction_t = WaveFunction_t
-        self.WaveFunction_t_Re = np.real(WaveFunction_t)
-        self.WaveFunction_t_Im = np.imag(WaveFunction_t)
-
 #%% Numerov Algorithm
 for nodes in range(Nmin, Nmax):   
     
@@ -163,7 +176,14 @@ for nodes in range(Nmin, Nmax):
                 Energy = Eguess            
                 WaveFunction = Normalization(psi, x) #Normalize
                 print("#--------------------------#")
-                break 
+                break
+            
+        if np.abs(Emin) < 10**-100 and np.abs(Eguess) < 10**-100 and np.abs(Emax)<10**-100:
+            print('Could not converge, saving last result')
+            Energy = Eguess            
+            WaveFunction = Normalization(psi, x) #Normalize
+            print("#--------------------------#")
+            break
     States[nodes] = State(Energy, WaveFunction)
     
 #%% Plot
