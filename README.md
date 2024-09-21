@@ -1,4 +1,5 @@
 # Numerov_simulation
 
-I am updating the README file
-And again
+A small bit of Python code to solve the time-independent Schrodinger equation for a given potential.
+Some toy potentials are defined like the Harmonic oscillator, a square well and a double square well.
+
